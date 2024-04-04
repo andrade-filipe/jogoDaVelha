@@ -1,6 +1,7 @@
 package org.university;
 
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.Scanner;
 
 public class JogoDaVelha {
@@ -10,16 +11,41 @@ public class JogoDaVelha {
     public static final char[] PLAYERS = new char[] {X_PLAYER, O_PLAYER};
     public static final ArrayList<int[]> WINNING_POSITIONS = new ArrayList<>();
     private int[] board;
-    private ArrayList possibleMoves;
-    private ArrayList xPositions;
-    private ArrayList oPositions;
+    private ArrayList<Integer> possibleMoves;
+    private ArrayList<Integer> xPositions;
+    private ArrayList<Integer> oPositions;
+
+    public static int amountOfLosses = 0;
+    public static int amountOfWins = 0;
     public JogoDaVelha(){
         this.board = new int[9];
-        this.possibleMoves = new ArrayList();
-        this.xPositions = new ArrayList();
-        this.oPositions = new ArrayList();
+        this.possibleMoves = new ArrayList<>();
+        this.xPositions = new ArrayList<>();
+        this.oPositions = new ArrayList<>();
         populateWinningPositions();
         refreshPossibleMoves();
+    }
+
+    public JogoDaVelha(int[] board){
+        this.board = board.clone();
+        this.possibleMoves = new ArrayList<>();
+        this.xPositions = new ArrayList<>();
+        this.oPositions = new ArrayList<>();
+        populateWinningPositions();
+        refreshPossibleMoves();
+        refreshMarkedPositions();
+    }
+
+    public JogoDaVelha(int[] board, char player, int move){
+        this.board = board.clone();
+        this.possibleMoves = new ArrayList<>();
+        this.xPositions = new ArrayList<>();
+        this.oPositions = new ArrayList<>();
+
+        this.doMove(player, move);
+        populateWinningPositions();
+        refreshPossibleMoves();
+        refreshMarkedPositions();
     }
 
     public void doMove(char player, int position){
@@ -66,7 +92,6 @@ public class JogoDaVelha {
     }
 
     public char checkWinner(){
-        this.refreshMarkedPositions();
         for(int[] win : WINNING_POSITIONS){
             if(checkIfPlayerXWon(win)){
                 return X_PLAYER;
@@ -144,6 +169,7 @@ public class JogoDaVelha {
                 break;
             }
             this.refreshPossibleMoves();
+            this.refreshMarkedPositions();
             player = this.switchPlayer(player);
             this.printBoard();
         }
@@ -153,70 +179,171 @@ public class JogoDaVelha {
 
     public void playVsComputer(){
         Scanner input = new Scanner(System.in);
-        this.printBoard();
         char player = X_PLAYER;
 
         while(!this.checkIfGameOver()){
+            this.printBoard();
             System.out.println(player + " Escolha uma posição de 0 a 8: ");
             int move = input.nextInt();
 
             if(validMove(move)){
                 this.doMove(player, move);
             }
+
+            this.refreshPossibleMoves();
+            this.refreshMarkedPositions();
+            player = this.switchPlayer(player);
+
             if(this.checkIfGameOver()){
                 break;
             }
-            this.refreshPossibleMoves();
-            player = this.switchPlayer(player);
-            this.printBoard();
+
+            if(player == O_PLAYER){
+                System.out.println("Computer plays...");
+                int pcMove = this.calculateMoveForO(this.board, O_PLAYER);
+                if(validMove(pcMove)){
+                    this.doMove(player, pcMove);
+                }
+
+                this.refreshPossibleMoves();
+                this.refreshMarkedPositions();
+                player = this.switchPlayer(player);
+
+                if(this.checkIfGameOver()){
+                    break;
+                }
+            }
         }
+        this.printBoard();
         this.printWinner();
         input.close();
     }
 
-//    #definição do algoritmo minimax para escolher o melhor movimento possivel para vencer a partida
-//    def minimax(self, node, player):
-//            if node.check_fim_partida():
-//            if node.X_vence():
-//            return -1
-//    elif node.empate():
-//            return 0
-//    elif node.O_vence():
-//            return 1
-//
-//    melhorValor = 0
-//
-//            for move in node.movimentos_disponiveis():
-//            node.marca_movimento(move, player)
-//    val = self.minimax(node, define_oponente(player))
-//            node.marca_movimento(move, 0)
-//            if player == 'O':
-//            if val > melhorValor:
-//    melhorValor = val
-//          else:
-//                  if val < melhorValor:
-//    melhorValor = val
-//        return melhorValor
-//    ///////////////////////////////////////////////////////////////////////////////////////
-//    #função piloto para aplicar o algoritmo minimax
-//    def determine(tabuleiro, player):
-//    a = 0
-//    escolhas = []
-//            if len(tabuleiro.movimentos_disponiveis()) == 9:
-//            return 4
-//            for move in tabuleiro.movimentos_disponiveis():
-//            tabuleiro.marca_movimento(move, player)
-//    val = tabuleiro.minimax(tabuleiro, define_oponente(player))
-//            tabuleiro.marca_movimento(move, 0)
-//            if val > a:
-//    a = val
-//    escolhas = [move]
-//    elif val == a:
-//            escolhas.append(move)
-//            try:
-//            return random.choice(escolhas)
-//    except IndexError:
-//            return random.choice(tabuleiro.movimentos_disponiveis())
+    public void playComputerVsComputer(){
+        char player = X_PLAYER;
+
+        while(!this.checkIfGameOver()){
+
+            if(player == X_PLAYER){
+                System.out.println(player + " plays...");
+                int pcMove = this.calculateMoveForX(this.board, X_PLAYER);
+                if(validMove(pcMove)){
+                    this.doMove(player, pcMove);
+                }
+
+                this.refreshPossibleMoves();
+                this.refreshMarkedPositions();
+                player = this.switchPlayer(player);
+
+                if(this.checkIfGameOver()){
+                    break;
+                }
+                this.printBoard();
+            }
+
+            if(player == O_PLAYER){
+                System.out.println(player + " plays...");
+                int pcMove = this.calculateMoveForO(this.board, O_PLAYER);
+                if(validMove(pcMove)){
+                    this.doMove(player, pcMove);
+                }
+
+                this.refreshPossibleMoves();
+                this.refreshMarkedPositions();
+                player = this.switchPlayer(player);
+
+                if(this.checkIfGameOver()){
+                    break;
+                }
+                this.printBoard();
+            }
+        }
+        this.printBoard();
+        this.printWinner();
+    }
+
+    private int calculateMoveForO(int[] board, char player) {
+        int currEvaluation = Integer.MIN_VALUE;
+        int bestMove = 9; //out of bounds
+        for(int move : this.possibleMoves){
+            amountOfLosses = 0;
+            amountOfWins = 0;
+            JogoDaVelha node = new JogoDaVelha(board, player,move);
+            node.oMinimax(player);
+
+            int evaluation = amountOfWins - amountOfLosses;
+            if(evaluation > currEvaluation){
+                currEvaluation = evaluation;
+                bestMove = move;
+            }else {
+                //Alpha & Beta modification, cutting the algorithm as soon as it finds a worse decision than the previous one
+                break;
+            }
+        }
+        return bestMove;
+    }
+
+    public void oMinimax(char player){
+        if(this.checkIfGameOver()){
+            if(this.xIsTheWinner()){
+                amountOfLosses += this.possibleMoves.size();
+                return;
+            } else if (this.draw()) {
+                return;
+            } else if(this.oIsTheWinner()){
+                amountOfWins += this.possibleMoves.size();
+                return;
+            }
+        }
+        player = this.switchPlayer(player);
+        for(int move : this.possibleMoves){
+            JogoDaVelha child = new JogoDaVelha(this.board, player, move);
+            child.oMinimax(player);
+        }
+    }
+
+    private int calculateMoveForX(int[] board, char player) {
+        int currEvaluation = Integer.MIN_VALUE;
+        int bestMove = 9; //out of bounds
+        if(this.possibleMoves.size() == 9){
+            return this.possibleMoves.get(new Random().nextInt(0,8));
+        }
+        for(int move : this.possibleMoves){
+            amountOfLosses = 0;
+            amountOfWins = 0;
+            JogoDaVelha node = new JogoDaVelha(board, player, move);
+            node.xMinimax(player);
+            int evaluation = amountOfWins - amountOfLosses;
+            if(evaluation > currEvaluation){
+                currEvaluation = evaluation;
+                bestMove = move;
+            } else {
+                //Alpha & Beta modification, cutting the algorithm as soon as it finds a worse decision than the previous one
+                //makes the AI dummer tho
+                break;
+            }
+        }
+        return bestMove;
+    }
+
+    public void xMinimax(char player){
+        if(this.checkIfGameOver()){
+            if(this.xIsTheWinner()){
+                amountOfWins += this.possibleMoves.size();
+                return;
+            } else if (this.draw()) {
+                return;
+            } else if(this.oIsTheWinner()){
+                amountOfLosses += this.possibleMoves.size();
+                return;
+            }
+        }
+        player = this.switchPlayer(player);
+        for(int move : this.possibleMoves){
+            JogoDaVelha child = new JogoDaVelha(this.board, player, move);
+            child.xMinimax(player);
+        }
+    }
 
     public boolean validMove(int move){
         return move <= 8 && move >= 0 && this.possibleMoves.contains(move);
